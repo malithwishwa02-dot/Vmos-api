@@ -1,0 +1,972 @@
+openapi: 3.0.3
+info:
+  title: VMOS Cloud API
+  description: |
+    API for managing and controlling VMOS Cloud/Edge Android virtual machines.
+    
+    ## Overview
+    
+    The VMOS API consists of two main parts:
+    - **Container API** - Manages cloud phone instances at the host level
+    - **Control API** - Controls individual Android instances
+    
+    ## Authentication
+    
+    Requests are authenticated using HMAC-SHA256 signatures.
+    See the security schemes section for details.
+    
+  version: 1.0.0
+  contact:
+    name: VMOS API Support
+    url: https://github.com/malithwishwa02-dot/Vmos-api
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://{host_ip}:18182
+    description: Container API Server
+    variables:
+      host_ip:
+        default: "192.168.1.100"
+        description: VMOS Edge host IP address
+  - url: http://{host_ip}:18182/android_api/v2/{db_id}
+    description: Control API via Host
+    variables:
+      host_ip:
+        default: "192.168.1.100"
+      db_id:
+        default: "EDGE001"
+        description: Instance database ID
+  - url: http://{cloud_ip}:18185/api
+    description: Direct Control API
+    variables:
+      cloud_ip:
+        default: "192.168.1.101"
+        description: Cloud device IP (LAN mode)
+
+tags:
+  - name: Instances
+    description: Instance lifecycle management
+  - name: Host
+    description: Host system management
+  - name: Apps
+    description: Application management
+  - name: Input
+    description: Input control
+  - name: Observation
+    description: Screen and UI observation
+  - name: Node
+    description: UI node operations
+  - name: System
+    description: System settings and operations
+
+paths:
+  # ========== Container API - Instances ==========
+  /container_api/v1/create:
+    post:
+      tags:
+        - Instances
+      summary: Create instance
+      description: Create new cloud phone instance(s)
+      operationId: createInstance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInstanceRequest'
+      responses:
+        '200':
+          description: Instance created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateInstanceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /container_api/v1/get_db:
+    post:
+      tags:
+        - Instances
+      summary: List instances
+      description: Get list of all instances (POST preferred)
+      operationId: listInstances
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: List of instances
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceListResponse'
+    get:
+      tags:
+        - Instances
+      summary: List instances (fallback)
+      description: Get list of all instances (GET fallback)
+      operationId: listInstancesGet
+      responses:
+        '200':
+          description: List of instances
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceListResponse'
+
+  /container_api/v1/get_android_detail/{db_id}:
+    get:
+      tags:
+        - Instances
+      summary: Get instance detail
+      operationId: getInstanceDetail
+      parameters:
+        - name: db_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Instance details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /container_api/v1/run:
+    post:
+      tags:
+        - Instances
+      summary: Start instances
+      operationId: startInstances
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstanceIdsRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+
+  /container_api/v1/stop:
+    post:
+      tags:
+        - Instances
+      summary: Stop instances
+      operationId: stopInstances
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstanceIdsRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+
+  /container_api/v1/reboot:
+    post:
+      tags:
+        - Instances
+      summary: Reboot instances
+      operationId: rebootInstances
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstanceIdsRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+
+  /container_api/v1/delete:
+    post:
+      tags:
+        - Instances
+      summary: Delete instances
+      operationId: deleteInstances
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstanceIdsRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+
+  # ========== Host Management ==========
+  /v1/heartbeat:
+    get:
+      tags:
+        - Host
+      summary: Health check
+      operationId: heartbeat
+      responses:
+        '200':
+          description: Host health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /v1/systeminfo:
+    get:
+      tags:
+        - Host
+      summary: System information
+      operationId: getSystemInfo
+      responses:
+        '200':
+          description: System information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemInfoResponse'
+
+  /v1/get_img_list:
+    get:
+      tags:
+        - Host
+      summary: List images
+      operationId: listImages
+      responses:
+        '200':
+          description: List of available images
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageListResponse'
+
+  # ========== Control API - Base ==========
+  /base/version_info:
+    get:
+      tags:
+        - System
+      summary: Get API version
+      operationId: getVersionInfo
+      responses:
+        '200':
+          description: API version information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionInfoResponse'
+
+  /base/list_action:
+    post:
+      tags:
+        - System
+      summary: List available actions
+      operationId: listActions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paths:
+                  type: array
+                  items:
+                    type: string
+                detail:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: List of actions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionListResponse'
+
+  # ========== Observation ==========
+  /display/info:
+    get:
+      tags:
+        - Observation
+      summary: Get display info
+      operationId: getDisplayInfo
+      responses:
+        '200':
+          description: Display information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisplayInfoResponse'
+
+  /screenshot/format:
+    get:
+      tags:
+        - Observation
+      summary: Take screenshot (PNG)
+      operationId: screenshotFormat
+      responses:
+        '200':
+          description: Screenshot image
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+
+  /screenshot/data_url:
+    get:
+      tags:
+        - Observation
+      summary: Take screenshot (Base64)
+      operationId: screenshotDataUrl
+      responses:
+        '200':
+          description: Screenshot as data URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScreenshotDataUrlResponse'
+
+  /accessibility/dump_compact:
+    get:
+      tags:
+        - Observation
+      summary: Get UI hierarchy
+      operationId: dumpCompact
+      responses:
+        '200':
+          description: Compact UI tree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DumpCompactResponse'
+
+  /activity/top_activity:
+    get:
+      tags:
+        - Observation
+      summary: Get current activity
+      operationId: getTopActivity
+      responses:
+        '200':
+          description: Current foreground activity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopActivityResponse'
+
+  # ========== Input Control ==========
+  /input/click:
+    post:
+      tags:
+        - Input
+      summary: Click at coordinates
+      operationId: click
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClickRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+
+  /input/swipe:
+    post:
+      tags:
+        - Input
+      summary: Swipe gesture
+      operationId: swipe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwipeRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+
+  /input/text:
+    post:
+      tags:
+        - Input
+      summary: Input text
+      operationId: inputText
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+
+  /input/keyevent:
+    post:
+      tags:
+        - Input
+      summary: Send key event
+      operationId: keyEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KeyEventRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+
+  # ========== UI Node ==========
+  /accessibility/node:
+    post:
+      tags:
+        - Node
+      summary: Find and interact with UI node
+      operationId: nodeOperation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeRequest'
+      responses:
+        '200':
+          description: Node found/action performed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeResponse'
+
+  # ========== App Management ==========
+  /activity/launch_app:
+    post:
+      tags:
+        - Apps
+      summary: Launch app with permissions
+      operationId: launchApp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LaunchAppRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+
+  /activity/start_activity:
+    post:
+      tags:
+        - Apps
+      summary: Start specific activity
+      operationId: startActivity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartActivityRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+
+  /package/list:
+    get:
+      tags:
+        - Apps
+      summary: List installed packages
+      operationId: listPackages
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [user, system]
+            default: user
+      responses:
+        '200':
+          description: List of packages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageListResponse'
+
+  /package/install_uri_sync:
+    post:
+      tags:
+        - Apps
+      summary: Install APK from URI
+      operationId: installFromUri
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - uri
+              properties:
+                uri:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+
+components:
+  schemas:
+    # ========== Request Schemas ==========
+    CreateInstanceRequest:
+      type: object
+      required:
+        - user_name
+      properties:
+        user_name:
+          type: string
+        count:
+          type: integer
+          default: 1
+        bool_start:
+          type: boolean
+          default: false
+        image_repository:
+          type: string
+        adiID:
+          type: integer
+        resolution:
+          type: string
+        locale:
+          type: string
+        timezone:
+          type: string
+        country:
+          type: string
+
+    InstanceIdsRequest:
+      type: object
+      required:
+        - db_ids
+      properties:
+        db_ids:
+          type: array
+          items:
+            type: string
+
+    ClickRequest:
+      type: object
+      required:
+        - x
+        - y
+      properties:
+        x:
+          type: integer
+        y:
+          type: integer
+
+    SwipeRequest:
+      type: object
+      required:
+        - start_x
+        - start_y
+        - end_x
+        - end_y
+      properties:
+        start_x:
+          type: integer
+        start_y:
+          type: integer
+        end_x:
+          type: integer
+        end_y:
+          type: integer
+        duration:
+          type: integer
+          default: 300
+        up_delay:
+          type: integer
+          default: 0
+
+    KeyEventRequest:
+      type: object
+      properties:
+        key_code:
+          type: integer
+        key_codes:
+          type: array
+          items:
+            type: integer
+
+    NodeRequest:
+      type: object
+      required:
+        - selector
+      properties:
+        selector:
+          $ref: '#/components/schemas/NodeSelector'
+        wait_timeout:
+          type: integer
+          default: 0
+        wait_interval:
+          type: integer
+          default: 500
+        action:
+          type: string
+          enum: [click, long_click, set_text, clear_text, scroll_forward, scroll_backward]
+        action_params:
+          type: object
+
+    NodeSelector:
+      type: object
+      properties:
+        xpath:
+          type: string
+        text:
+          type: string
+        content_desc:
+          type: string
+        resource_id:
+          type: string
+        class_name:
+          type: string
+        package:
+          type: string
+        clickable:
+          type: boolean
+        enabled:
+          type: boolean
+        scrollable:
+          type: boolean
+        index:
+          type: integer
+
+    LaunchAppRequest:
+      type: object
+      required:
+        - package_name
+      properties:
+        package_name:
+          type: string
+        grant_all_permissions:
+          type: boolean
+          default: false
+
+    StartActivityRequest:
+      type: object
+      required:
+        - package_name
+      properties:
+        package_name:
+          type: string
+        class_name:
+          type: string
+        action:
+          type: string
+        data:
+          type: string
+        extras:
+          type: object
+
+    # ========== Response Schemas ==========
+    BaseResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        request_id:
+          type: string
+
+    CreateInstanceResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                db_ids:
+                  type: array
+                  items:
+                    type: string
+
+    InstanceListResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Instance'
+
+    Instance:
+      type: object
+      properties:
+        db_id:
+          type: string
+        user_name:
+          type: string
+        status:
+          type: string
+          enum: [creating, starting, running, stopping, stopped, rebooting, rebuilding, renewing, deleting]
+        cloud_ip:
+          type: string
+        adb_address:
+          type: string
+
+    InstanceDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/InstanceDetail'
+
+    InstanceDetail:
+      allOf:
+        - $ref: '#/components/schemas/Instance'
+        - type: object
+          properties:
+            rom_status:
+              type: string
+            android_version:
+              type: string
+            resolution:
+              type: string
+            locale:
+              type: string
+            timezone:
+              type: string
+
+    HealthResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                host_ok:
+                  type: boolean
+                docker_ok:
+                  type: boolean
+                ping_ok:
+                  type: boolean
+
+    SystemInfoResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                cpu_usage:
+                  type: number
+                memory_used:
+                  type: string
+                memory_total:
+                  type: string
+                disk_used:
+                  type: string
+                disk_total:
+                  type: string
+
+    ImageListResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  size:
+                    type: string
+
+    VersionInfoResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                version_name:
+                  type: string
+                version_code:
+                  type: integer
+                supported_list:
+                  type: array
+                  items:
+                    type: string
+
+    ActionListResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  path:
+                    type: string
+                  description:
+                    type: string
+                  method:
+                    type: string
+
+    DisplayInfoResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                width:
+                  type: integer
+                height:
+                  type: integer
+                density:
+                  type: integer
+                rotation:
+                  type: integer
+
+    ScreenshotDataUrlResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                data_url:
+                  type: string
+
+    DumpCompactResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                root:
+                  $ref: '#/components/schemas/UINode'
+
+    UINode:
+      type: object
+      properties:
+        class_name:
+          type: string
+        text:
+          type: string
+        content_desc:
+          type: string
+        resource_id:
+          type: string
+        bounds:
+          type: string
+        clickable:
+          type: boolean
+        enabled:
+          type: boolean
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/UINode'
+
+    TopActivityResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                package_name:
+                  type: string
+                class_name:
+                  type: string
+
+    NodeResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/UINode'
+
+    PackageListResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  package_name:
+                    type: string
+                  label:
+                    type: string
+                  version_name:
+                    type: string
+
+  responses:
+    Success:
+      description: Operation successful
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BaseResponse'
+    
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BaseResponse'
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BaseResponse'
+
+  securitySchemes:
+    hmacAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        HMAC-SHA256 signature authentication.
+        Format: `HMAC-SHA256 Credential={access_key}, SignedHeaders=content-type;x-date;x-host, Signature={signature}`
+
+security:
+  - hmacAuth: []

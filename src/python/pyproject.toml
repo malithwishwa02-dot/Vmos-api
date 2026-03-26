@@ -1,0 +1,89 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vmos-api"
+version = "1.0.0"
+description = "Comprehensive SDK for VMOS Cloud/Edge Android Virtual Machine API"
+readme = "../../README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "VMOS API Contributors", email = "vmos-api@example.com"}
+]
+keywords = [
+    "vmos",
+    "android",
+    "virtual-machine",
+    "cloud-phone",
+    "automation",
+    "api",
+    "sdk"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Testing",
+    "Topic :: System :: Emulators",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-mock>=3.0",
+    "black>=23.0",
+    "isort>=5.0",
+    "mypy>=1.0",
+    "flake8>=6.0",
+]
+image = [
+    "pillow>=9.0",
+]
+all = [
+    "vmos-api[dev,image]",
+]
+
+[project.urls]
+Homepage = "https://github.com/malithwishwa02-dot/Vmos-api"
+Documentation = "https://github.com/malithwishwa02-dot/Vmos-api/tree/main/docs"
+Repository = "https://github.com/malithwishwa02-dot/Vmos-api.git"
+Issues = "https://github.com/malithwishwa02-dot/Vmos-api/issues"
+
+[project.scripts]
+vmos-cli = "vmos_api.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["vmos_api*"]
+
+[tool.black]
+line-length = 88
+target-version = ["py38", "py39", "py310", "py311", "py312"]
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["../../tests/python"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --cov=vmos_api --cov-report=term-missing"
