@@ -1,0 +1,39 @@
+{
+  "name": "vmos-api",
+  "version": "1.0.0",
+  "description": "Comprehensive SDK for VMOS Cloud/Edge Android Virtual Machine API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "vmos",
+    "android",
+    "virtual-machine",
+    "cloud-phone",
+    "automation",
+    "api",
+    "sdk"
+  ],
+  "author": "VMOS API Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/malithwishwa02-dot/Vmos-api.git"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "dist/**/*"
+  ]
+}
